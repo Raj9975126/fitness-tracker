@@ -1,0 +1,67 @@
+enum WorkoutSessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model WorkoutRoutine {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routineExercises RoutineExercise[]
+  workoutSessions  WorkoutSession[]
+
+  @@index([userId])
+  @@map("workout_routines")
+}
+
+model RoutineExercise {
+  id          String   @id @default(uuid())
+  routineId   String   @map("routine_id")
+  exerciseId  String   @map("exercise_id")
+  orderIndex  Int      @map("order_index")
+  targetSets  Int      @default(3) @map("target_sets")
+  targetReps  String   @default("8-12") @map("target_reps") @db.VarChar(50)
+  restSeconds Int?     @default(90) @map("rest_seconds")
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  routine  WorkoutRoutine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@unique([routineId, orderIndex])
+  @@index([routineId])
+  @@index([exerciseId])
+  @@map("routine_exercises")
+}
+
+model WorkoutSession {
+  id            String               @id @default(uuid())
+  userId        String               @map("user_id")
+  routineId     String?              @map("routine_id")
+  name          String               @db.VarChar(100)
+  startTime     DateTime             @default(now()) @map("start_time")
+  endTime       DateTime?            @map("end_time")
+  status        WorkoutSessionStatus @default(IN_PROGRESS)
+  totalVolumeKg Float                @default(0) @map("total_volume_kg")
+  notes         String?              @db.Text
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  setLogs SetLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([startTime])
+  @@index([userId, status])
+  @@map("workout_sessions")
+}
