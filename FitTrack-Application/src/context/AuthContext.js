@@ -1,29 +1,59 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { setTokenProvider, setUnauthorizedHandler, setUserIdProvider } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// Placeholder auth state. Swap signIn/signOut for real API calls + secure token storage.
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading] = useState(false);
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
+    const [isLoading] = useState(false);
 
-  const value = useMemo(
-    () => ({
-      user,
-      isLoading,
-      isAuthenticated: !!user,
-      signIn: async (email) => setUser({ email }),
-      signUp: async ({ email, name }) => setUser({ email, name }),
-      signOut: async () => setUser(null),
-    }),
-    [user, isLoading]
-  );
+    const signOut = useCallback(async () => {
+        setUser(null);
+        setToken(null);
+    }, []);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    useEffect(() => {
+        setTokenProvider(() => token);
+        setUserIdProvider(() => user?.id ?? null);
+        setUnauthorizedHandler(() => {
+            setUser(null);
+            setToken(null);
+        });
+    }, [token, user]);
+
+    const signIn = useCallback(async (email) => {
+        setUser({ id: 'demo-user-id', email });
+    }, []);
+
+    const signUp = useCallback(async ({ email, name }) => {
+        setUser({ id: 'demo-user-id', email, name });
+    }, []);
+
+    const setSession = useCallback(({ user: nextUser, token: nextToken }) => {
+        setUser(nextUser ?? null);
+        setToken(nextToken ?? null);
+    }, []);
+
+    const value = useMemo(
+        () => ({
+            user,
+            token,
+            isLoading,
+            isAuthenticated: !!user,
+            signIn,
+            signUp,
+            signOut,
+            setSession,
+        }),
+        [user, token, isLoading, signIn, signUp, signOut, setSession]
+    );
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+    return ctx;
 }
