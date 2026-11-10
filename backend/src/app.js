@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 
+const authRouter = require('./routes/auth.routes');
+
 const app = express();
 
 // Middlewares
@@ -13,8 +15,8 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'FitTrack API is running' });
 });
 
-// Route handlers will be mounted here
-// e.g., app.use('/api/auth', authRoutes);
+// Route handlers
+app.use('/api/auth', authRouter);
 
 module.exports = app;
 
