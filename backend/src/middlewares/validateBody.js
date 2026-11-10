@@ -145,10 +145,82 @@ const validateUpdateRoutineExercise = asyncHandler(async (req, _res, next) => {
     return next();
 });
 
+const validateStartSession = asyncHandler(async (req, _res, next) => {
+    const rawUserId = req.body.userId || req.headers['x-user-id'];
+    const { routineId, name, notes } = req.body;
+
+    if (!rawUserId || typeof rawUserId !== 'string' || rawUserId.trim() === '') {
+        throw new AppError('userId is required', 400);
+    }
+
+    if (routineId !== undefined && routineId !== null) {
+        if (typeof routineId !== 'string' || routineId.trim() === '') {
+            throw new AppError('routineId must be a valid string', 400);
+        }
+    }
+
+    if (name !== undefined && name !== null) {
+        if (typeof name !== 'string' || name.trim() === '') {
+            throw new AppError('Session name must be a non-empty string', 400);
+        }
+        if (name.trim().length > 100) {
+            throw new AppError('Session name must not exceed 100 characters', 400);
+        }
+    }
+
+    if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+        throw new AppError('notes must be a string', 400);
+    }
+
+    req.body = {
+        userId: rawUserId.trim(),
+        routineId: routineId ? routineId.trim() : null,
+        name: name ? name.trim() : undefined,
+        notes: notes ? notes.trim() : null,
+    };
+
+    return next();
+});
+
+const validateUpdateSession = asyncHandler(async (req, _res, next) => {
+    const { name, status, totalVolumeKg, notes, endTime } = req.body;
+    const allowedStatuses = ['IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+
+    if (name !== undefined) {
+        if (typeof name !== 'string' || name.trim() === '') {
+            throw new AppError('Session name must be a non-empty string', 400);
+        }
+        if (name.trim().length > 100) {
+            throw new AppError('Session name must not exceed 100 characters', 400);
+        }
+        req.body.name = name.trim();
+    }
+
+    if (status !== undefined && !allowedStatuses.includes(status)) {
+        throw new AppError('status must be one of IN_PROGRESS, COMPLETED, or CANCELLED', 400);
+    }
+
+    if (totalVolumeKg !== undefined && (typeof totalVolumeKg !== 'number' || totalVolumeKg < 0)) {
+        throw new AppError('totalVolumeKg must be a non-negative number', 400);
+    }
+
+    if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+        throw new AppError('notes must be a string', 400);
+    }
+
+    if (endTime !== undefined && endTime !== null && Number.isNaN(Date.parse(endTime))) {
+        throw new AppError('endTime must be a valid ISO date string', 400);
+    }
+
+    return next();
+});
+
 module.exports = {
     validateCreateRoutine,
     validateUpdateRoutine,
     validateAddExercise,
     validateUpdateRoutineExercise,
+    validateStartSession,
+    validateUpdateSession,
 };
 
