@@ -1,0 +1,68 @@
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum FitnessGoal {
+  LOSE_WEIGHT
+  BUILD_MUSCLE
+  MAINTAIN
+  IMPROVE_ENDURANCE
+  GENERAL_FITNESS
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum ExerciseCategory {
+  STRENGTH
+  CARDIO
+  FLEXIBILITY
+  BALANCE
+  HIIT
+  OTHER
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  FOREARMS
+  CORE
+  QUADS
+  HAMSTRINGS
+  GLUTES
+  CALVES
+  FULL_BODY
+}
+
+enum Equipment {
+  NONE
+  BARBELL
+  DUMBBELL
+  KETTLEBELL
+  MACHINE
+  CABLE
+  RESISTANCE_BAND
+  OTHER
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}

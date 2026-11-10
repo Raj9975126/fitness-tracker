@@ -1,0 +1,25 @@
+/// Global library exercises have createdById = null;
+/// user-created custom exercises reference their owner.
+model Exercise {
+  id               String           @id @default(uuid())
+  name             String
+  description      String?
+  instructions     String?
+  category         ExerciseCategory
+  primaryMuscle    MuscleGroup      @map("primary_muscle")
+  secondaryMuscles MuscleGroup[]    @map("secondary_muscles")
+  equipment        Equipment        @default(NONE)
+  difficulty       Difficulty       @default(BEGINNER)
+  imageUrl         String?          @map("image_url")
+  isCustom         Boolean          @default(false) @map("is_custom")
+  createdById      String?          @map("created_by_id")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([name, createdById])
+  @@index([category])
+  @@index([primaryMuscle])
+  @@map("exercises")
+}
