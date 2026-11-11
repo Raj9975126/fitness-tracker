@@ -33,4 +33,20 @@ const touchLastLogin = (id) =>
         select: publicUserSelect,
     });
 
-module.exports = { findUserByEmail, findUserById, createUser, touchLastLogin };
+/**
+ * Updates the user's name and/or profile fields in one transaction.
+ * Upserts the profile in case an older account has none yet.
+ */
+const updateUserProfile = (id, { user, profile }) =>
+    prisma.user.update({
+        where: { id },
+        data: {
+            ...user,
+            ...(Object.keys(profile).length > 0 && {
+                profile: { upsert: { create: profile, update: profile } },
+            }),
+        },
+        select: { ...publicUserSelect, profile: true },
+    });
+
+module.exports = { findUserByEmail, findUserById, createUser, touchLastLogin, updateUserProfile };
