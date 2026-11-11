@@ -1,3 +1,9 @@
+enum WorkoutSessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model WorkoutRoutine {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
@@ -34,4 +40,28 @@ model RoutineExercise {
   @@index([routineId])
   @@index([exerciseId])
   @@map("routine_exercises")
+}
+
+model WorkoutSession {
+  id            String               @id @default(uuid())
+  userId        String               @map("user_id")
+  routineId     String?              @map("routine_id")
+  name          String               @db.VarChar(100)
+  startTime     DateTime             @default(now()) @map("start_time")
+  endTime       DateTime?            @map("end_time")
+  status        WorkoutSessionStatus @default(IN_PROGRESS)
+  totalVolumeKg Float                @default(0) @map("total_volume_kg")
+  notes         String?              @db.Text
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  setLogs SetLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([startTime])
+  @@index([userId, status])
+  @@map("workout_sessions")
 }
