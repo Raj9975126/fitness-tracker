@@ -9,6 +9,21 @@ export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async () => {
+    if (!name.trim() || !email.trim()) return setError('Please enter your name and email');
+    if (password.length < 8) return setError('Password must be at least 8 characters');
+    setLoading(true);
+    setError(null);
+    try {
+      await signUp({ name: name.trim(), email: email.trim(), password });
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   return (
     <ScreenContainer>
@@ -18,7 +33,8 @@ export default function RegisterScreen({ navigation }) {
         <Input label="Name" placeholder="Your name" value={name} onChangeText={setName} />
         <Input label="Email" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
         <Input label="Password" placeholder="At least 8 characters" secureTextEntry value={password} onChangeText={setPassword} />
-        <Button title="Sign up" onPress={() => signUp({ name, email, password })} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Button title="Sign up" onPress={onSubmit} loading={loading} />
         <Button title="I already have an account" variant="secondary" onPress={() => navigation.goBack()} />
       </KeyboardAvoidingView>
     </ScreenContainer>
