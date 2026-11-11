@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 
 const authRouter = require('./routes/auth.routes');
+const userRouter = require('./routes/user.routes');
+const exerciseRouter = require('./routes/exercise.routes');
 const routineRouter = require('./routes/routine.routes');
 const sessionRouter = require('./routes/session.routes');
 
@@ -16,6 +18,8 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
+app.use('/api/exercises', exerciseRouter);
 
 app.use('/api/v1/routines', routineRouter);
 app.use('/api/routines', routineRouter);
