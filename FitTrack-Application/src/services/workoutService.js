@@ -24,3 +24,21 @@ export const startWorkoutSession = async ({ userId, routineId, name, notes }) =>
     return response.data;
 };
 
+export const getSessionDetails = async (sessionId) => {
+    const response = await api.get(`/sessions/${sessionId}`);
+    return response.data;
+};
+
+export const getSessionSets = async (sessionId) => {
+    const response = await api.get(`/sessions/${sessionId}/sets`);
+    return response.data;
+};
+
+export const saveSessionSets = async (sessionId, sets, replace = false) => {
+    const response = await api.put(`/sessions/${sessionId}/sets`, {
+        sets,
+        replace,
+    });
+    return response.data;
+};
+
