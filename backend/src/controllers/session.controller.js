@@ -6,7 +6,33 @@ const {
     getSessionsByUserId,
     getSessionById,
     updateWorkoutSession,
+    findExistingExerciseIds,
+    getSetLogsBySessionId,
+    batchSaveSetLogs,
+    findSetLogInSession,
+    updateSingleSetLog,
+    deleteSingleSetLog,
 } = require('../repository/session.repository');
+
+const getParamString = (value) => (Array.isArray(value) ? value[0] : value);
+
+const ensureSessionExists = async (req, sessionId) => {
+    if (!sessionId) {
+        throw new AppError('Session ID is required', 400);
+    }
+
+    const session = await getSessionById(sessionId);
+    if (!session) {
+        throw new AppError('Workout session not found', 404);
+    }
+
+    const callerUserId = req.user?.id || req.headers['x-user-id'];
+    if (callerUserId && String(session.userId) !== String(callerUserId)) {
+        throw new AppError('You are not authorized to access this workout session', 403);
+    }
+
+    return session;
+};
 
 const startSession = asyncHandler(async (req, res) => {
     const { userId, routineId, name, notes } = req.body;
@@ -111,10 +137,114 @@ const updateSessionDetails = asyncHandler(async (req, res) => {
     });
 });
 
+const getSessionSets = asyncHandler(async (req, res) => {
+    const sessionId = getParamString(req.params.id);
+    const session = await ensureSessionExists(req, sessionId);
+    const setLogs = await getSetLogsBySessionId(sessionId);
+
+    return res.status(200).json({
+        success: true,
+        message: 'Session sets fetched successfully',
+        data: {
+            sessionId,
+            totalVolumeKg: session.totalVolumeKg,
+            setLogs,
+        },
+    });
+});
+
+const saveSessionSets = asyncHandler(async (req, res) => {
+    const sessionId = getParamString(req.params.id);
+    const session = await ensureSessionExists(req, sessionId);
+
+    if (session.status === 'CANCELLED') {
+        throw new AppError('Cannot log sets for a cancelled workout session', 400);
+    }
+
+    const { sets, replace } = req.body;
+    const exerciseIds = sets.map((item) => item.exerciseId).filter(Boolean);
+
+    if (exerciseIds.length > 0) {
+        const existingIds = await findExistingExerciseIds(exerciseIds);
+        const existingSet = new Set(existingIds);
+        const missingIds = [...new Set(exerciseIds.filter((id) => !existingSet.has(id)))];
+
+        if (missingIds.length > 0) {
+            throw new AppError(`Invalid exerciseId(s): ${missingIds.join(', ')}`, 400);
+        }
+    }
+
+    const result = await batchSaveSetLogs(sessionId, sets, { replace });
+
+    return res.status(req.method === 'POST' ? 201 : 200).json({
+        success: true,
+        message: 'Session sets saved successfully',
+        data: result,
+    });
+});
+
+const updateSessionSet = asyncHandler(async (req, res) => {
+    const sessionId = getParamString(req.params.id);
+    const setId = getParamString(req.params.setId);
+
+    const session = await ensureSessionExists(req, sessionId);
+    if (session.status === 'CANCELLED') {
+        throw new AppError('Cannot update sets for a cancelled workout session', 400);
+    }
+
+    if (!setId) {
+        throw new AppError('Set ID is required', 400);
+    }
+
+    const existingSet = await findSetLogInSession(sessionId, setId);
+    if (!existingSet) {
+        throw new AppError('SetLog not found in this workout session', 404);
+    }
+
+    const result = await updateSingleSetLog(sessionId, setId, req.body);
+
+    return res.status(200).json({
+        success: true,
+        message: 'Set updated successfully',
+        data: result,
+    });
+});
+
+const deleteSessionSet = asyncHandler(async (req, res) => {
+    const sessionId = getParamString(req.params.id);
+    const setId = getParamString(req.params.setId);
+
+    const session = await ensureSessionExists(req, sessionId);
+    if (session.status === 'CANCELLED') {
+        throw new AppError('Cannot delete sets from a cancelled workout session', 400);
+    }
+
+    if (!setId) {
+        throw new AppError('Set ID is required', 400);
+    }
+
+    const existingSet = await findSetLogInSession(sessionId, setId);
+    if (!existingSet) {
+        throw new AppError('SetLog not found in this workout session', 404);
+    }
+
+    const result = await deleteSingleSetLog(sessionId, setId);
+
+    return res.status(200).json({
+        success: true,
+        message: 'Set deleted successfully',
+        data: result,
+    });
+});
+
 module.exports = {
     startSession,
     getMySessions,
     getSession,
     updateSessionDetails,
+    getSessionSets,
+    saveSessionSets,
+    updateSessionSet,
+    deleteSessionSet,
 };
 

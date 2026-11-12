@@ -215,6 +215,125 @@ const validateUpdateSession = asyncHandler(async (req, _res, next) => {
     return next();
 });
 
+const validateSetEntry = (item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        throw new AppError(`sets[${index}] must be an object`, 400);
+    }
+
+    const { id, exerciseId, setNumber, weight, reps, rpe, isCompleted } = item;
+
+    if (id !== undefined && id !== null && (typeof id !== 'string' || id.trim() === '')) {
+        throw new AppError(`sets[${index}].id must be a non-empty string`, 400);
+    }
+
+    if (!id && (!exerciseId || typeof exerciseId !== 'string' || exerciseId.trim() === '')) {
+        throw new AppError(`sets[${index}].exerciseId is required when creating a set`, 400);
+    }
+
+    if (exerciseId !== undefined && (typeof exerciseId !== 'string' || exerciseId.trim() === '')) {
+        throw new AppError(`sets[${index}].exerciseId must be a non-empty string`, 400);
+    }
+
+    if (!id && setNumber === undefined) {
+        throw new AppError(`sets[${index}].setNumber is required when creating a set`, 400);
+    }
+
+    if (setNumber !== undefined && (!Number.isInteger(setNumber) || setNumber < 1)) {
+        throw new AppError(`sets[${index}].setNumber must be an integer >= 1`, 400);
+    }
+
+    if (weight !== undefined && (typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0)) {
+        throw new AppError(`sets[${index}].weight must be a non-negative number`, 400);
+    }
+
+    if (reps !== undefined && (!Number.isInteger(reps) || reps < 0)) {
+        throw new AppError(`sets[${index}].reps must be an integer >= 0`, 400);
+    }
+
+    if (rpe !== undefined && rpe !== null && (typeof rpe !== 'number' || !Number.isFinite(rpe) || rpe < 0 || rpe > 10)) {
+        throw new AppError(`sets[${index}].rpe must be between 0 and 10`, 400);
+    }
+
+    if (isCompleted !== undefined && typeof isCompleted !== 'boolean') {
+        throw new AppError(`sets[${index}].isCompleted must be a boolean`, 400);
+    }
+
+    return {
+        ...(id ? { id: id.trim() } : {}),
+        ...(exerciseId !== undefined ? { exerciseId: exerciseId.trim() } : {}),
+        ...(setNumber !== undefined ? { setNumber } : {}),
+        ...(weight !== undefined ? { weight } : id ? {} : { weight: 0 }),
+        ...(reps !== undefined ? { reps } : id ? {} : { reps: 0 }),
+        ...(rpe !== undefined ? { rpe } : {}),
+        ...(isCompleted !== undefined ? { isCompleted } : id ? {} : { isCompleted: true }),
+    };
+};
+
+const validateBatchSets = asyncHandler(async (req, _res, next) => {
+    const { sets, replace } = req.body || {};
+
+    if (!Array.isArray(sets) || sets.length === 0) {
+        throw new AppError('sets must be a non-empty array', 400);
+    }
+
+    if (replace !== undefined && typeof replace !== 'boolean') {
+        throw new AppError('replace must be a boolean', 400);
+    }
+
+    const normalizedSets = sets.map((item, index) => validateSetEntry(item, index));
+
+    req.body = {
+        sets: normalizedSets,
+        replace: Boolean(replace),
+    };
+
+    return next();
+});
+
+const validateUpdateSet = asyncHandler(async (req, _res, next) => {
+    const { setNumber, weight, reps, rpe, isCompleted } = req.body || {};
+
+    if (
+        setNumber === undefined &&
+        weight === undefined &&
+        reps === undefined &&
+        rpe === undefined &&
+        isCompleted === undefined
+    ) {
+        throw new AppError('At least one field (setNumber, weight, reps, rpe, isCompleted) is required', 400);
+    }
+
+    if (setNumber !== undefined && (!Number.isInteger(setNumber) || setNumber < 1)) {
+        throw new AppError('setNumber must be an integer >= 1', 400);
+    }
+
+    if (weight !== undefined && (typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0)) {
+        throw new AppError('weight must be a non-negative number', 400);
+    }
+
+    if (reps !== undefined && (!Number.isInteger(reps) || reps < 0)) {
+        throw new AppError('reps must be an integer >= 0', 400);
+    }
+
+    if (rpe !== undefined && rpe !== null && (typeof rpe !== 'number' || !Number.isFinite(rpe) || rpe < 0 || rpe > 10)) {
+        throw new AppError('rpe must be between 0 and 10', 400);
+    }
+
+    if (isCompleted !== undefined && typeof isCompleted !== 'boolean') {
+        throw new AppError('isCompleted must be a boolean', 400);
+    }
+
+    req.body = {
+        ...(setNumber !== undefined && { setNumber }),
+        ...(weight !== undefined && { weight }),
+        ...(reps !== undefined && { reps }),
+        ...(rpe !== undefined && { rpe }),
+        ...(isCompleted !== undefined && { isCompleted }),
+    };
+
+    return next();
+});
+
 module.exports = {
     validateCreateRoutine,
     validateUpdateRoutine,
@@ -222,5 +341,7 @@ module.exports = {
     validateUpdateRoutineExercise,
     validateStartSession,
     validateUpdateSession,
+    validateBatchSets,
+    validateUpdateSet,
 };
 
