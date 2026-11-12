@@ -13,6 +13,7 @@ const {
     updateSingleSetLog,
     deleteSingleSetLog,
 } = require('../repository/session.repository');
+const { processSessionPRs, detectAndSavePRs } = require('../services/prDetection.service');
 
 const getParamString = (value) => (Array.isArray(value) ? value[0] : value);
 
@@ -176,10 +177,18 @@ const saveSessionSets = asyncHandler(async (req, res) => {
 
     const result = await batchSaveSetLogs(sessionId, sets, { replace });
 
+    const newPersonalRecords = await processSessionPRs({
+        userId: session.userId,
+        sets: result.setLogs,
+    });
+
     return res.status(req.method === 'POST' ? 201 : 200).json({
         success: true,
         message: 'Session sets saved successfully',
-        data: result,
+        data: {
+            ...result,
+            newPersonalRecords,
+        },
     });
 });
 
@@ -203,10 +212,21 @@ const updateSessionSet = asyncHandler(async (req, res) => {
 
     const result = await updateSingleSetLog(sessionId, setId, req.body);
 
+    const newPersonalRecords = await detectAndSavePRs({
+        userId: session.userId,
+        exerciseId: result.setLog.exerciseId,
+        setLogId: setId,
+        weight: result.setLog.weight,
+        reps: result.setLog.reps,
+    });
+
     return res.status(200).json({
         success: true,
         message: 'Set updated successfully',
-        data: result,
+        data: {
+            ...result,
+            newPersonalRecords,
+        },
     });
 });
 
