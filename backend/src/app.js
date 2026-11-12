@@ -6,6 +6,7 @@ const userRouter = require('./routes/user.routes');
 const exerciseRouter = require('./routes/exercise.routes');
 const routineRouter = require('./routes/routine.routes');
 const sessionRouter = require('./routes/session.routes');
+const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 
@@ -28,5 +29,9 @@ app.use('/routines', routineRouter);
 app.use('/api/v1/sessions', sessionRouter);
 app.use('/api/sessions', sessionRouter);
 app.use('/sessions', sessionRouter);
+
+// 404 & Global Error Handling
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;
