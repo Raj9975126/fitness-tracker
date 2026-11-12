@@ -42,3 +42,18 @@ export const saveSessionSets = async (sessionId, sets, replace = false) => {
     return response.data;
 };
 
+export const updateSingleSessionSet = async (sessionId, setId, updates) => {
+    const response = await api.patch(`/sessions/${sessionId}/sets/${setId}`, updates);
+    return response.data;
+};
+
+export const deleteSingleSessionSet = async (sessionId, setId) => {
+    const response = await api.delete(`/sessions/${sessionId}/sets/${setId}`);
+    return response.data;
+};
+
+export const updateWorkoutSession = async (sessionId, updates) => {
+    const response = await api.patch(`/sessions/${sessionId}`, updates);
+    return response.data;
+};
+

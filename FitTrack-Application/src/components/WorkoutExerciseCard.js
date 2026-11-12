@@ -7,9 +7,12 @@ import { formatEnum } from '../utils/format';
 export default function WorkoutExerciseCard({
     entry,
     onChangeSetField,
+    onToggleSetComplete,
+    onAddSet,
+    onRemoveSet,
     onRemoveExercise,
 }) {
-    const { exercise, targetSets, targetReps, sets } = entry;
+    const { exercise, targetSets, targetReps, restSeconds, sets } = entry;
     const detailParts = [
         exercise?.primaryMuscle ? formatEnum(exercise.primaryMuscle) : null,
         exercise?.equipment && exercise.equipment !== 'NONE'
@@ -33,6 +36,9 @@ export default function WorkoutExerciseCard({
                                 </Text>
                             </View>
                         ) : null}
+                        {restSeconds ? (
+                            <Text style={styles.restHint}>Rest {restSeconds}s</Text>
+                        ) : null}
                     </View>
                 </View>
 
@@ -52,20 +58,23 @@ export default function WorkoutExerciseCard({
                 <Text style={[styles.colHeader, styles.setCol]}>SET</Text>
                 <Text style={[styles.colHeader, styles.inputCol]}>KG</Text>
                 <Text style={[styles.colHeader, styles.inputCol]}>REPS</Text>
-                <Text style={[styles.colHeader, styles.statusCol]}>LOG</Text>
+                <Text style={[styles.colHeader, styles.actionCol]}>DONE</Text>
+                <View style={styles.deleteCol} />
             </View>
 
             {sets.map((setRow) => {
-                const isSaved = Boolean(setRow.id);
+                const isDone = Boolean(setRow.isCompleted);
 
                 return (
                     <View
                         key={`${entry.exerciseId}-${setRow.setNumber}`}
-                        style={[styles.setRow, isSaved && styles.setRowSaved]}
+                        style={[styles.setRow, isDone && styles.setRowCompleted]}
                     >
                         <View style={styles.setCol}>
-                            <View style={styles.setBadge}>
-                                <Text style={styles.setNumber}>{setRow.setNumber}</Text>
+                            <View style={[styles.setBadge, isDone && styles.setBadgeCompleted]}>
+                                <Text style={[styles.setNumber, isDone && styles.setNumberCompleted]}>
+                                    {setRow.setNumber}
+                                </Text>
                             </View>
                         </View>
 
@@ -97,16 +106,41 @@ export default function WorkoutExerciseCard({
                             />
                         </View>
 
-                        <View style={styles.statusCol}>
-                            <Ionicons
-                                name={isSaved ? 'checkmark-circle' : 'ellipse-outline'}
-                                size={20}
-                                color={isSaved ? colors.success : colors.border}
-                            />
-                        </View>
+                        <Pressable
+                            onPress={() => onToggleSetComplete(entry.exerciseId, setRow.setNumber)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Mark set ${setRow.setNumber} completed`}
+                            style={({ pressed }) => [styles.actionCol, pressed && { opacity: 0.7 }]}
+                        >
+                            <View style={[styles.checkBox, isDone && styles.checkBoxDone]}>
+                                <Ionicons
+                                    name="checkmark"
+                                    size={16}
+                                    color={isDone ? colors.textInverse : colors.textMuted}
+                                />
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => onRemoveSet(entry.exerciseId, setRow.setNumber)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove set ${setRow.setNumber}`}
+                            style={({ pressed }) => [styles.deleteCol, pressed && { opacity: 0.7 }]}
+                        >
+                            <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                        </Pressable>
                     </View>
                 );
             })}
+
+            <Pressable
+                onPress={() => onAddSet(entry.exerciseId)}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.addSetButton, pressed && { opacity: 0.7 }]}
+            >
+                <Ionicons name="add" size={16} color={colors.primary} />
+                <Text style={styles.addSetText}>Add Set</Text>
+            </Pressable>
         </Card>
     );
 }
@@ -149,6 +183,10 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.primaryDark,
     },
+    restHint: {
+        fontSize: 12,
+        color: colors.textMuted,
+    },
     removeButton: {
         width: 30,
         height: 30,
@@ -178,11 +216,11 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.xs + 2,
         borderRadius: radius.sm,
     },
-    setRowSaved: {
+    setRowCompleted: {
         backgroundColor: '#F0FDF4',
     },
     setCol: {
-        width: 48,
+        width: 40,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -194,10 +232,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    setBadgeCompleted: {
+        backgroundColor: '#DCFCE7',
+    },
     setNumber: {
         fontSize: 13,
         fontWeight: '700',
         color: colors.text,
+    },
+    setNumberCompleted: {
+        color: colors.success,
     },
     inputCol: {
         flex: 1,
@@ -215,10 +259,43 @@ const styles = StyleSheet.create({
         color: colors.text,
         textAlign: 'center',
     },
-    statusCol: {
+    actionCol: {
         width: 44,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    checkBox: {
+        width: 28,
+        height: 28,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkBoxDone: {
+        backgroundColor: colors.success,
+        borderColor: colors.success,
+    },
+    deleteCol: {
+        width: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addSetButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        marginTop: spacing.sm,
+        paddingVertical: spacing.xs + 2,
+        borderRadius: radius.md,
+        backgroundColor: colors.surface,
+    },
+    addSetText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.primary,
+    },
 });
-
