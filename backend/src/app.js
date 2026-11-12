@@ -6,6 +6,8 @@ const userRouter = require('./routes/user.routes');
 const exerciseRouter = require('./routes/exercise.routes');
 const routineRouter = require('./routes/routine.routes');
 const sessionRouter = require('./routes/session.routes');
+const prRouter = require('./routes/pr.routes');
+const analyticsRouter = require('./routes/analytics.routes');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -29,6 +31,14 @@ app.use('/routines', routineRouter);
 app.use('/api/v1/sessions', sessionRouter);
 app.use('/api/sessions', sessionRouter);
 app.use('/sessions', sessionRouter);
+
+app.use('/api/v1/prs', prRouter);
+app.use('/api/prs', prRouter);
+app.use('/prs', prRouter);
+
+app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/analytics', analyticsRouter);
+app.use('/analytics', analyticsRouter);
 
 // 404 & Global Error Handling
 app.use(notFoundHandler);
