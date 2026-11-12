@@ -1,3 +1,4 @@
+/* global require, module */
 const prisma = require('../prisma');
 
 /**
@@ -10,9 +11,11 @@ const prisma = require('../prisma');
  * @returns {number}
  */
 const calculate1RM = (weight, reps) => {
-  if (weight <= 0 || reps <= 0) return 0;
-  if (reps === 1) return weight;
-  const estimated = weight * (1 + reps / 30);
+  const w = Number(weight) || 0;
+  const r = Number(reps) || 0;
+  if (w <= 0 || r <= 0) return 0;
+  if (r === 1) return w;
+  const estimated = w * (1 + r / 30);
   return Math.round(estimated * 100) / 100;
 };
 
@@ -28,8 +31,8 @@ const calculate1RM = (weight, reps) => {
  * @param {string} params.userId - User who performed the set
  * @param {string} params.exerciseId - Exercise performed
  * @param {string} [params.setLogId] - ID of the SetLog that achieved the PR
- * @param {number} params.weight - Weight lifted in kg/lbs
- * @param {number} params.reps - Reps performed
+ * @param {number|string} params.weight - Weight lifted in kg/lbs
+ * @param {number|string} params.reps - Reps performed
  * @param {object} [params.tx] - Optional Prisma transaction client
  * @returns {Promise<Array<object>>} - List of newly achieved PRs
  */
@@ -37,33 +40,39 @@ const detectAndSavePRs = async ({ userId, exerciseId, setLogId, weight, reps, tx
   const db = tx || prisma;
 
   if (!userId || !exerciseId) return [];
-  if (weight <= 0 && reps <= 0) return [];
+
+  const numWeight = Number(weight) || 0;
+  const numReps = Number(reps) || 0;
+
+  if (numWeight <= 0 && numReps <= 0) return [];
+
+  const validSetLogId = setLogId && typeof setLogId === 'string' && setLogId.trim() !== '' ? setLogId.trim() : null;
 
   // Metrics for this set
   const candidates = [
     {
       recordType: 'MAX_WEIGHT',
-      value: weight,
-      weight,
-      reps,
+      value: numWeight,
+      weight: numWeight,
+      reps: numReps,
     },
     {
       recordType: 'MAX_VOLUME',
-      value: Math.round(weight * reps * 100) / 100,
-      weight,
-      reps,
+      value: Math.round(numWeight * numReps * 100) / 100,
+      weight: numWeight,
+      reps: numReps,
     },
     {
       recordType: 'MAX_REPS',
-      value: reps,
-      weight,
-      reps,
+      value: numReps,
+      weight: numWeight,
+      reps: numReps,
     },
     {
       recordType: 'ESTIMATED_1RM',
-      value: calculate1RM(weight, reps),
-      weight,
-      reps,
+      value: calculate1RM(numWeight, numReps),
+      weight: numWeight,
+      reps: numReps,
     },
   ];
 
@@ -102,7 +111,7 @@ const detectAndSavePRs = async ({ userId, exerciseId, setLogId, weight, reps, tx
             value: candidate.value,
             weight: candidate.weight,
             reps: candidate.reps,
-            setLogId: setLogId || null,
+            setLogId: validSetLogId,
             achievedAt: new Date(),
           },
           include: {
@@ -117,7 +126,7 @@ const detectAndSavePRs = async ({ userId, exerciseId, setLogId, weight, reps, tx
           data: {
             userId,
             exerciseId,
-            setLogId: setLogId || null,
+            setLogId: validSetLogId,
             recordType: candidate.recordType,
             value: candidate.value,
             weight: candidate.weight,
@@ -141,7 +150,7 @@ const detectAndSavePRs = async ({ userId, exerciseId, setLogId, weight, reps, tx
         improvement: oldValue ? Math.round((candidate.value - oldValue) * 100) / 100 : candidate.value,
         exerciseId,
         exerciseName: savedRecord.exercise?.name,
-        setLogId,
+        setLogId: validSetLogId,
         achievedAt: savedRecord.achievedAt,
       });
     }
