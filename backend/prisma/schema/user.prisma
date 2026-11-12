@@ -12,6 +12,7 @@ model User {
   customExercises Exercise[]
   routines        WorkoutRoutine[]
   workoutSessions WorkoutSession[]
+  personalRecords PersonalRecord[]
 
   @@map("users")
 }

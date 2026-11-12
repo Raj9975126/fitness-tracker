@@ -18,6 +18,8 @@ model Exercise {
 
   createdBy        User?             @relation(fields: [createdById], references: [id], onDelete: Cascade)
   routineExercises RoutineExercise[]
+  setLogs          SetLog[]
+  personalRecords  PersonalRecord[]
 
   @@unique([name, createdById])
   @@index([category])

@@ -1,0 +1,50 @@
+enum RecordType {
+  MAX_WEIGHT
+  MAX_REPS
+  MAX_VOLUME
+  ESTIMATED_1RM
+}
+
+model SetLog {
+  id               String   @id @default(uuid())
+  workoutSessionId String   @map("workout_session_id")
+  exerciseId       String   @map("exercise_id")
+  setNumber        Int      @map("set_number")
+  weight           Float    @default(0)
+  reps             Int      @default(0)
+  rpe              Float?
+  isCompleted      Boolean  @default(true) @map("is_completed")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workoutSession  WorkoutSession   @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise        Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  personalRecords PersonalRecord[]
+
+  @@index([workoutSessionId])
+  @@index([exerciseId])
+  @@map("set_logs")
+}
+
+model PersonalRecord {
+  id         String     @id @default(uuid())
+  userId     String     @map("user_id")
+  exerciseId String     @map("exercise_id")
+  setLogId   String?    @map("set_log_id")
+  recordType RecordType @default(MAX_WEIGHT) @map("record_type")
+  value      Float
+  weight     Float?
+  reps       Int?
+  achievedAt DateTime   @default(now()) @map("achieved_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  setLog   SetLog?  @relation(fields: [setLogId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([setLogId])
+  @@map("personal_records")
+}
